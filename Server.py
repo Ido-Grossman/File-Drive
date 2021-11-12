@@ -14,6 +14,7 @@ while True:
     print("Sent:", data.upper())
     data = client_socket.recv(100)
     print('Received: ', data)
+
     client_socket.send(data.upper())
     print("Sent:", data.upper())
     client_socket.close()
