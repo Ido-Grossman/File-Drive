@@ -5,6 +5,7 @@ portNum = sys.argv[1]
 server.bind(('', portNum))
 server.listen(5)
 while True:
+
     print("waiting for connection")
     client_socket, client_address = server.accept()
     print('Connection from: ', client_address)
