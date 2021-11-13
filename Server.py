@@ -1,11 +1,12 @@
 import socket
 import sys
 server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-portNum = sys.argv[1]
+if len(sys.argv) != 2:
+    exit(-1)
+portNum = int(sys.argv[1])
 server.bind(('', portNum))
 server.listen(5)
 while True:
-
     print("waiting for connection")
     client_socket, client_address = server.accept()
     print('Connection from: ', client_address)
