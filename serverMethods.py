@@ -17,11 +17,8 @@ def createNewClient(identifier):
 
 
 # this method returns the current path we need to update
-def getPathToWrite(decoded_data, identifier):
-    path = getPath(identifier)
-    path_to_write = decoded_data.split(':')[1]
-    path = os.path.join(path, path_to_write)
-    os.mkdir(path)
+def getPathToWrite(path, path_to_join):
+    path = os.path.join(path, path_to_join)
     return path
 
 
@@ -34,6 +31,7 @@ def getPath(identifier):
 
 def createNewFolder(path, folder_name):
     path = os.path.join(path, folder_name)
+    print("the file" + folder_name + "has been created")
     os.mkdir(path)
 
 def createNewFile(path, file_name):
