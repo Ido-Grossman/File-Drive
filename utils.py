@@ -36,3 +36,35 @@ def sendFiles(socket, path_to_main, path_to_folder, directories, files):
             socket.send(bytes_read)
         socket.recv(100)
         f.close()
+
+
+def recvFile(socket, path_to_main):
+    socket.send("empty directory".encode('utf-8'))
+    message = socket.recv(100).decode('utf-8')
+    while message != "I have finished":
+        curr_path = str(path_to_main)
+        while message != "the directories are:":
+            message = socket.recv(100).decode('utf-8')
+            socket.send(b'hi')
+            os.path.join(curr_path, message)
+        while message != "the files are:":
+            message = socket.recv(100).decode('utf-8')
+            socket.send(b'hi')
+            dir_path = os.path.join(curr_path, message)
+            os.mkdir(dir_path)
+        while message != "the path is:" or message != "I have finished":
+            message = socket.recv(100).decode('utf-8')
+            socket.send(b'hi')
+            file_path = os.path.join(curr_path, message)
+            message = socket.recv(100).decode()
+            socket.send(b'hi')
+            file_size = int(message)
+            file = open(file_path, "wb")
+            counter = 0
+            while counter < file_size:
+                # read 1024 bytes from the socket (receive)
+                bytes_read = socket.recv(100000)
+                counter += len(bytes_read)
+                # write to the file the bytes we just received
+                file.write(bytes_read)
+            file.close()
