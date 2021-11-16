@@ -4,6 +4,7 @@ import os
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
 
+import utils
 
 SEPARATOR = "<SEPARATOR>"
 BUFFER_SIZE = 100000
@@ -19,7 +20,6 @@ if len(sys.argv) == 6:
     if (len(sys.argv[5]) < 128):
         exit(-1)
     identifier = sys.argv[5]
-files = os.walk(path, True)
 finishMessage = "I have finished"
 
 
@@ -44,45 +44,11 @@ def recvFile():
             file = open(filePath, "wb")
 
 
-def sendAll():
-    global identifier, files
+def sendAll(socket):
     files = os.walk(path, True)
-    for (dirpath, dirnames, filename) in files:
-        s.send("the path is:".encode('utf-8'))
-        s.recv(100)
-        localPath = str(dirpath).removeprefix(path)
-        seperator = ""
-        if path.find('\\'):
-            seperator = '\\'
-        else:
-            seperator = '/'
-        pathToFolder = localPath.split(seperator)
-        if len(pathToFolder) > 1:
-            for i in range(1, len(pathToFolder)):
-                s.send(pathToFolder[i].encode('utf-8'))
-                s.recv(100)
-        s.send("the directories are:".encode('utf-8'))
-        s.recv(100)
-        for directory in dirnames:
-            s.send(directory.encode('utf-8'))
-            s.recv(100)
-        s.send("the files are:".encode('utf-8'))
-        s.recv(100)
-        for file in filename:
-            filepath = os.path.join(dirpath, file)
-            filesize = str(os.path.getsize(filepath))
-            s.send(file.encode('utf-8'))
-            s.recv(100)
-            s.send(filesize.encode('utf-8'))
-            s.recv(100)
-            f = open(filepath, "rb")
-            while True:
-                bytes_read = f.read(4096)
-                if not bytes_read:
-                    break
-                s.send(bytes_read)
-            s.recv(100)
-            f.close()
+    for (dirpath, dirnames, filenames) in files:
+        utils.sendFiles(socket, path, dirpath, dirnames, filenames)
+        
 
 
 def sync():
@@ -96,7 +62,7 @@ if identifier is None:
     s.send("Hello, i am new here".encode('utf-8'))
     identifier = s.recv(130).decode('utf-8')
     print(identifier)
-    sendAll()
+    sendAll(s)
 else:
     s.send(identifier.encode('utf-8'))
     message = s.recv(100).decode('utf-8')
@@ -105,6 +71,6 @@ else:
     elif message == "found you!" and len(os.listdir(path)) == 0:
         recvFile()
     else:
-        sendAll()
+        sendAll(s)
 s.send(finishMessage.encode('utf-8'))
 s.close()
