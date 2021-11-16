@@ -23,27 +23,6 @@ if len(sys.argv) == 6:
 finishMessage = "I have finished"
 
 
-def recvFile():
-    s.send("empty directory".encode('utf-8'))
-    message = s.recv(100).decode('utf-8')
-    while message != finishMessage:
-        currPath = path
-        while message != "the directories are:":
-            message = s.recv(100).decode('utf-8')
-            s.send(b'hi')
-            os.path.join(currPath, message)
-        while message != "the files are:":
-            message = s.recv(100).decode('utf-8')
-            s.send(b'hi')
-            dirPath = os.path.join(currPath, message)
-            os.mkdir(dirPath)
-        while message != "the path is:" or message != finishMessage:
-            message = s.recv(100).decode('utf-8')
-            s.send(b'hi')
-            filePath = os.path.join(currPath, message)
-            file = open(filePath, "wb")
-
-
 def sendAll(socket):
     files = os.walk(path, True)
     for (dirpath, dirnames, filenames) in files:
@@ -69,7 +48,7 @@ else:
     if message == "found you!":
         sync()
     elif message == "found you!" and len(os.listdir(path)) == 0:
-        recvFile()
+        utils.recvFile(s, path)
     else:
         sendAll(s)
 s.send(finishMessage.encode('utf-8'))
