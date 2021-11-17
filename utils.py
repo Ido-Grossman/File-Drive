@@ -8,17 +8,11 @@ def sendFiles(socket, path_to_main, path_to_folder, directories, files):
     local_path = str(path_to_folder).removeprefix(path_to_main)
     socket.send("the path is:".encode('utf-8'))
     socket.recv(100)
-    # it finds how the folder are seperated in the os and splits them and sends each folder by order to get into the
-    # desired path
-    separator = os.sep
-    path_to_folder = local_path.split(separator)
-    if len(path_to_folder) > 1:
-        for i in range(1, len(path_to_folder)):
-            socket.send(path_to_folder[i].encode('utf-8'))
-            socket.recv(100)
-    # after it finished sending the path it sends all the directories in the path
-    socket.send("the directories are:".encode('utf-8'))
+    socket.send(os.sep.encode('utf-8'))
     socket.recv(100)
+    socket.send(local_path.encode('utf-8'))
+    socket.recv(100)
+    # after it finished sending the path it sends all the directories in the path
     for directory in directories:
         socket.send(directory.encode('utf-8'))
         socket.recv(100)
@@ -50,12 +44,10 @@ def recvFile(socket, path_to_main):
     while message != "I have finished":
         # saves the path we currently in
         curr_path = str(path_to_main)
-        while message != "the directories are:":
-            # until we get the message "the directories are:" it means the other side still sends us the path
-            # so we join each folder to the current path
-            message = socket.recv(100).decode('utf-8')
-            socket.send(b'hi')
-            os.path.join(curr_path, message)
+        separator = socket.recv(100).decode('utf-8')
+        socket.send(b'hi')
+        message = str(message).replace(separator, os.sep)
+        curr_path = os.path.join(curr_path, message)
         while message != "the files are:":
             # until we get the message "the files are:" it means we still get the directories so we create them.
             message = socket.recv(100).decode('utf-8')
