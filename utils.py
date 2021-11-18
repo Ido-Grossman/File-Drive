@@ -89,6 +89,7 @@ def recvFile(socket, path_to_main):
             file.close()
             message = socket.recv(100).decode('utf-8')
 
+
 def createIdentifier():
     length = 128
     random_identifier = ''.join(random.choices(string.ascii_lowercase + string.ascii_uppercase + string.digits, k=length))
@@ -107,3 +108,11 @@ def getPath(identifier):
     directory_name = identifier
     path = os.path.join(parent_dir, directory_name)
     return path
+
+
+def noIdentifier(identifier):
+    return None
+
+
+def updateFile(identifier):
+    return None
