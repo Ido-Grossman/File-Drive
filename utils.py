@@ -14,6 +14,7 @@ def sendFiles(socket, path_to_main, path_to_folder, directories, files):
         socket.send(local_path.encode('utf-8'))
         socket.recv(100)
     socket.send("the directories are:".encode('utf-8'))
+    socket.recv(100)
     # after it finished sending the path it sends all the directories in the path
     for directory in directories:
         socket.send(directory.encode('utf-8'))
