@@ -14,13 +14,7 @@ def createIdentifier():
 def createNewClient(identifier):
     path = getPath(identifier)
     os.mkdir(path)
-
-
-# this method returns the current path we need to update
-def getPathToWrite(path, path_to_join):
-    path = os.path.join(path, path_to_join)
     return path
-
 
 # this method returns the path directory of the given identifier
 def getPath(identifier):
@@ -28,12 +22,3 @@ def getPath(identifier):
     directory_name = identifier
     path = os.path.join(parent_dir, directory_name)
     return path
-
-def createNewFolder(path, folder_name):
-    path = os.path.join(path, folder_name)
-    print("the file" + folder_name + "has been created")
-    os.mkdir(path)
-
-def createNewFile(path, file_name):
-    path = os.path.join(path, file_name)
-    open(path, 'w')
