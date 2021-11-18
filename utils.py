@@ -8,10 +8,12 @@ def sendFiles(socket, path_to_main, path_to_folder, directories, files):
     local_path = str(path_to_folder).removeprefix(path_to_main)
     socket.send("the path is:".encode('utf-8'))
     socket.recv(100)
-    socket.send(os.sep.encode('utf-8'))
+    socket.send(str(os.sep).encode('utf-8'))
     socket.recv(100)
-    socket.send(local_path.encode('utf-8'))
-    socket.recv(100)
+    if local_path != '':
+        socket.send(local_path.encode('utf-8'))
+        socket.recv(100)
+    socket.send("the directories are:".encode('utf-8'))
     # after it finished sending the path it sends all the directories in the path
     for directory in directories:
         socket.send(directory.encode('utf-8'))
@@ -44,11 +46,14 @@ def recvFile(socket, path_to_main):
     while message != "I have finished":
         # saves the path we currently in
         curr_path = str(path_to_main)
+        socket.send(b'hi')
         separator = socket.recv(100).decode('utf-8')
         socket.send(b'hi')
         message = socket.recv(100).decode('utf-8')
-        message = str(message).replace(separator, os.sep)
-        curr_path = os.path.join(curr_path, message)
+        socket.send(b'hi')
+        if message != "the directories are:":
+            message = str(message).replace(separator, os.sep)
+            curr_path = os.path.join(curr_path, message)
         while message != "the files are:":
             # until we get the message "the files are:" it means we still get the directories so we create them.
             message = socket.recv(100).decode('utf-8')
