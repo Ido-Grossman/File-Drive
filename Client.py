@@ -55,7 +55,7 @@ else:
     # If the server found the identifier and the client folder is empty, the server sends the client everything
     elif message == "found you!" and len(os.listdir(path)) == 0:
         s.send("empty directory".encode('utf-8'))
-        utils.recvFile(s, path)
+        #utils.recvFile(s, path)
     # If the server didn't find the identifier then the client sends everything to the server
     else:
         sendAll(s)
