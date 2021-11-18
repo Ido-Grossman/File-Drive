@@ -46,6 +46,7 @@ def recvFile(socket, path_to_main):
         curr_path = str(path_to_main)
         separator = socket.recv(100).decode('utf-8')
         socket.send(b'hi')
+        message = socket.recv(100).decode('utf-8')
         message = str(message).replace(separator, os.sep)
         curr_path = os.path.join(curr_path, message)
         while message != "the files are:":

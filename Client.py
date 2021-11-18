@@ -44,7 +44,6 @@ s.connect((ip, port))
 if identifier is None:
     s.send("Hello, i am new here".encode('utf-8'))
     identifier = s.recv(130).decode('utf-8')
-    print(identifier)
     sendAll(s)
 else:
     # If the client already have an identifier he sends it to the server.
