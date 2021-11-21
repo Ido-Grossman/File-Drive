@@ -48,14 +48,14 @@ def recvFile(socket, path_to_main):
     # while the other side didn't finish sending all the files it tries to get to the next path
     while message != "I have finished":
         # saves the path we currently in
-        curr_path = str(path_to_main)
+        curr_path = path_to_main
         socket.send(b'hi')
         message = socket.recv(100).decode('utf-8')
-        socket.send(b'hi')
         while message != "the directories are:":
             curr_path = os.path.join(curr_path, message)
-            message = socket.recv(100).decode('utf-8')
             socket.send(b'hi')
+            message = socket.recv(100).decode('utf-8')
+        socket.send(b'hi')
         message = socket.recv(100).decode('utf-8')
         while message != "the files are:":
             # until we get the message "the files are:" it means we still get the directories so we create them.
@@ -63,17 +63,16 @@ def recvFile(socket, path_to_main):
             dir_path = os.path.join(curr_path, message)
             os.mkdir(dir_path)
             message = socket.recv(100).decode('utf-8')
-            print(message)
+        socket.send(b'hi')
+        message = socket.recv(100).decode('utf-8')
         while message != "the path is:":
             # until the other side has finished or sends us another path we create the files in the path
             # we get the name and size of file each time and open the file
             if message == "I have finished":
                 break
             socket.send(b'hi')
-            message = socket.recv(100).decode('utf-8')
-            socket.send(b'hi')
             file_path = os.path.join(curr_path, message)
-            message = socket.recv(100).decode()
+            message = socket.recv(100).decode('utf-8')
             socket.send(b'hi')
             file_size = int(message)
             file = open(file_path, "wb")

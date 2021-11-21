@@ -22,10 +22,11 @@ while True:
     # if there is no identifier we get the hello... message
     if identifier == "Hello, i am new here":
         # we create a random identifier and sending it to the client
+        client_socket.send(b'1')    # sending the number of pc
         identifier = utils.createIdentifier()
+        print(identifier)
         num_of_users_per_identifier[identifier] = 1
         client_socket.send(identifier.encode())  # sending the identifier
-        client_socket.send(b'1')    # sending the number of pc
         path = utils.createNewClient(identifier)  # then we create the file with the name of the identifier
         utils.recvFile(client_socket, path)
 
