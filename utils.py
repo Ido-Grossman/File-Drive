@@ -49,6 +49,12 @@ class Handler(FileSystemEventHandler):
         self.changes.clear()
 
 
+def remove_prefix(to_remove, string1):
+    if string1.startswith(to_remove):
+        string1 = string1.lstrip(to_remove)
+    return string1
+
+
 # Used to send files to the other side, it gets the socket, path to the folder it syncs = path_to_main,
 # path to the current folder he is in = path_to_folder, directories and files inside the folder
 def send_files(socket, path_to_main, path_to_folder, directories, files):
