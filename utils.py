@@ -21,29 +21,14 @@ class Handler(FileSystemEventHandler):
     def __init__(self):
         self.changes = list()
 
-    def on_deleted(self, event):
-        if event.is_directory:
-            self.changes.append((event.event_type, event.is_directory, event.src_path))
+    def on_any_event(self, event):
+        if event.event_type == 'closed':
+            return
+        if event.event_type == 'moved':
+            details = (event.event_type, event.is_directory, event.src_path, event.src_path)
         else:
-            self.changes.append((event.event_type, event.is_directory, event.src_path))
-
-    def on_moved(self, event):
-        if event.is_directory:
-            self.changes.append((event.event_type, event.is_directory, event.src_path, event.dest_path))
-        else:
-            self.changes.append((event.event_type, event.is_directory, event.src_path, event.dest_path))
-
-    def on_created(self, event):
-        if event.is_directory:
-            self.changes.append((event.event_type, event.is_directory, event.src_path))
-        else:
-            self.changes.append((event.event_type, event.is_directory, event.src_path))
-
-    def on_modified(self, event):
-        if event.is_directory:
-            self.changes.append((event.event_type, event.is_directory, event.src_path))
-        else:
-            self.changes.append((event.event_type, event.is_directory, event.src_path))
+            details = (event.event_type, event.is_directory, event.src_path)
+        self.changes.append(details)
 
     def reset_changes(self):
         self.changes.clear()
