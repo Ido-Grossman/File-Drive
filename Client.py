@@ -25,7 +25,10 @@ def send_pc_num():
     global pcNum
     s.recv(100)
     s.send(str(pcNum).encode('utf-8'))
+    if pcNum != 0:
+        return
     pcNum = int(s.recv(100).decode())
+    s.send(b'hi')
 
 
 def sync():
@@ -49,14 +52,13 @@ while True:
         # If the client already have an identifier he sends it to the server.
         s.send(identifier.encode('utf-8'))
         send_pc_num()
-        s.send(b'hi')
         message = s.recv(100).decode('utf-8')
         # if the server found the identifier then it syncs all the new changes with the client.
-        if message == "found you!":
-            sync()
-        # If the server found the identifier and the client folder is empty, the server sends the client everything
-        elif message == "found you!" and pcNum == 0:
+        if message == "found you, new":
             utils.recv_file(s, path)
+        # If the server found the identifier and the client folder is empty, the server sends the client everything
+        elif message == "found you!":
+            sync()
         # If the server didn't find the identifier then the client sends everything to the server
         else:
             utils.send_all(path, s)
