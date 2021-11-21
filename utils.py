@@ -59,7 +59,10 @@ def remove_prefix(to_remove, string1):
 # path to the current folder he is in = path_to_folder, directories and files inside the folder
 def send_files(socket, path_to_main, path_to_folder, directories, files):
     # it sets the local path of the folder we are in now and notifies the server that he sends the path
-    local_path = str(path_to_folder).removeprefix(path_to_main)
+    try:
+        local_path = str(path_to_folder).removeprefix(path_to_main)
+    except:
+        local_path = remove_prefix(path_to_main, path_to_folder)
     socket.send("the path is:".encode('utf-8'))
     socket.recv(100)
     separator = os.sep
