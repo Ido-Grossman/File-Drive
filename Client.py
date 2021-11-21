@@ -17,6 +17,8 @@ if len(sys.argv) == 6:
     identifier = sys.argv[5]
 trial = os.sep
 pcNum = 0
+handler = utils.Handler()
+watcher = utils.Watcher(path, handler)
 
 
 def send_pc_num():
@@ -40,6 +42,8 @@ while True:
         s.send("Hello, i am new here".encode('utf-8'))
         send_pc_num()
         identifier = s.recv(130).decode('utf-8')
+        f = open('identifier.txt', 'w')
+        f.write(identifier)
         utils.send_all(path, s)
     else:
         # If the client already have an identifier he sends it to the server.
@@ -57,5 +61,7 @@ while True:
         else:
             utils.send_all(path, s)
     s.close()
-    handler = utils.Handler()
+    break
+    handler.reset_changes()
+    watcher.run(timeOut)
     break

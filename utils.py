@@ -4,11 +4,13 @@ import random
 from watchdog.events import FileSystemEventHandler
 from watchdog.observers import Observer
 
+
 class Watcher:
-    def __init__(self, directory=".", handler = FileSystemEventHandler()):
+    def __init__(self, directory=".", handler=FileSystemEventHandler()):
         self.observer = Observer()
         self.handler = handler
         self.directory = directory
+
     def run(self, timeout):
         self.observer.schedule(self.handler, self.directory, recursive=True)
         self.observer.start()
