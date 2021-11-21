@@ -19,17 +19,7 @@ trial = os.sep
 pcNum = 0
 
 
-# sends all the files that are in the folder
-def sendAll(socket):
-    # gets all the files in the folder and for folder inside it sends all the files and folders it contains
-    files = os.walk(path, True)
-    for (dirpath, dirnames, filenames) in files:
-        utils.sendFiles(socket, path, dirpath, dirnames, filenames)
-    # when it finished sending all the files it notifies the server
-    socket.send("I have finished".encode('utf-8'))
-
-
-def sendPcNum():
+def send_pc_num():
     global pcNum
     s.recv(100)
     s.send(str(pcNum).encode('utf-8'))
@@ -48,23 +38,24 @@ while True:
     # inside the folder and subfolder to the server
     if identifier is None:
         s.send("Hello, i am new here".encode('utf-8'))
-        sendPcNum()
+        send_pc_num()
         identifier = s.recv(130).decode('utf-8')
-        sendAll(s)
+        utils.send_all(path, s)
     else:
         # If the client already have an identifier he sends it to the server.
         s.send(identifier.encode('utf-8'))
-        sendPcNum()
+        send_pc_num()
+        s.send(b'hi')
         message = s.recv(100).decode('utf-8')
         # if the server found the identifier then it syncs all the new changes with the client.
         if message == "found you!":
             sync()
         # If the server found the identifier and the client folder is empty, the server sends the client everything
-        elif message == "found you!" and len(os.listdir(path)) == 0:
-            s.send("empty directory".encode('utf-8'))
-            utils.recvFile(s, path)
+        elif message == "found you!" and pcNum == 0:
+            utils.recv_file(s, path)
         # If the server didn't find the identifier then the client sends everything to the server
         else:
-            sendAll(s)
+            utils.send_all(path, s)
     s.close()
+    handler = utils.Handler()
     break

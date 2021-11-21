@@ -9,41 +9,47 @@ class Watcher:
         self.observer = Observer()
         self.handler = handler
         self.directory = directory
-    def run(self):
+    def run(self, timeout):
         self.observer.schedule(self.handler, self.directory, recursive=True)
         self.observer.start()
-        self.observer.join(30)
+        self.observer.join(timeout)
 
 
 class Handler(FileSystemEventHandler):
     def __init__(self):
-        self.modDirs = list()
-        self.modFiles = list()
-        self.delDirs = list()
-        self.delFiles = list()
-        self.movDirs = list()
-        self.movFiles = list()
-        self.newDirs = list()
-        self.newFiles = list()
-
-    def on_any_event(self, event):
-        return None
+        self.changes = list()
 
     def on_deleted(self, event):
-        return None
+        if event.is_directory:
+            self.changes.append((event.event_type, event.is_directory, event.src_path))
+        else:
+            self.changes.append((event.event_type, event.is_directory, event.src_path))
 
     def on_moved(self, event):
-        return None
+        if event.is_directory:
+            self.changes.append((event.event_type, event.is_directory, event.src_path, event.dest_path))
+        else:
+            self.changes.append((event.event_type, event.is_directory, event.src_path, event.dest_path))
 
     def on_created(self, event):
-        return None
+        if event.is_directory:
+            self.changes.append((event.event_type, event.is_directory, event.src_path))
+        else:
+            self.changes.append((event.event_type, event.is_directory, event.src_path))
 
     def on_modified(self, event):
-        return None
+        if event.is_directory:
+            self.changes.append((event.event_type, event.is_directory, event.src_path))
+        else:
+            self.changes.append((event.event_type, event.is_directory, event.src_path))
+
+    def reset_changes(self):
+        self.changes.clear()
+
 
 # Used to send files to the other side, it gets the socket, path to the folder it syncs = path_to_main,
 # path to the current folder he is in = path_to_folder, directories and files inside the folder
-def sendFiles(socket, path_to_main, path_to_folder, directories, files):
+def send_files(socket, path_to_main, path_to_folder, directories, files):
     # it sets the local path of the folder we are in now and notifies the server that he sends the path
     local_path = str(path_to_folder).removeprefix(path_to_main)
     socket.send("the path is:".encode('utf-8'))
@@ -82,7 +88,7 @@ def sendFiles(socket, path_to_main, path_to_folder, directories, files):
         f.close()
 
 
-def recvFile(socket, path_to_main):
+def recv_file(socket, path_to_main):
     message = socket.recv(100).decode('utf-8')
     # while the other side didn't finish sending all the files it tries to get to the next path
     while message != "I have finished":
@@ -128,29 +134,40 @@ def recvFile(socket, path_to_main):
             message = socket.recv(100).decode('utf-8')
 
 
-def createIdentifier():
+def create_identifier():
     length = 128
     random_identifier = ''.join(random.choices(string.ascii_lowercase + string.ascii_uppercase + string.digits, k=length))
     return str(random_identifier)
 
 
 # this method creates a new file for the specified identifier on the server
-def createNewClient(identifier):
-    path = getPath(identifier)
+def create_new_client(identifier):
+    path = get_path(identifier)
     os.mkdir(path)
     return path
 
+
 # this method returns the path directory of the given identifier
-def getPath(identifier):
+def get_path(identifier):
     parent_dir = os.getcwd()
     directory_name = identifier
     path = os.path.join(parent_dir, directory_name)
     return path
 
 
-def noIdentifier(identifier):
+def no_identifier(identifier):
     return None
 
 
-def updateFile(identifier):
+def update_file(identifier):
     return None
+
+
+# sends all the files that are in the folder
+def send_all(path, socket):
+    # gets all the files in the folder and for folder inside it sends all the files and folders it contains
+    files = os.walk(path, True)
+    for (dirpath, dirnames, filenames) in files:
+        send_files(socket, path, dirpath, dirnames, filenames)
+    # when it finished sending all the files it notifies the server
+    socket.send("I have finished".encode('utf-8'))
