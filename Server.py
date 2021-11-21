@@ -23,24 +23,37 @@ while True:
     if identifier == "Hello, i am new here":
         # we create a random identifier and sending it to the client
         client_socket.send(b'1')    # sending the number of pc
-        identifier = utils.createIdentifier()
+        identifier = utils.create_identifier()
+        client_socket.recv(100)
         print(identifier)
         num_of_users_per_identifier[identifier] = 1
         client_socket.send(identifier.encode())  # sending the identifier
-        path = utils.createNewClient(identifier)  # then we create the file with the name of the identifier
-        utils.recvFile(client_socket, path)
+        path = utils.create_new_client(identifier)  # then we create the file with the name of the identifier
+        utils.recv_file(client_socket, path)
 
     else:
-        try:
-            number_of_users = num_of_users_per_identifier.get(identifier)
-        except:
-            utils.noIdentifier(identifier)
+        number_of_users = num_of_users_per_identifier.get(identifier)
+        if number_of_users is None:
+            client_socket.send(b'1')  # sending the number of pc
+            client_socket.recv(100)
+            client_socket.send(b'not found')
+            num_of_users_per_identifier[identifier] = 1
+            print(identifier)
+            path = utils.create_new_client(identifier)
+            utils.recv_file(client_socket, path)
         else:       # if the identifier was found
+
             if int(pc_num) == 0:
                 number_of_users += 1
                 num_of_users_per_identifier[identifier] = number_of_users
-                client_socket.send(number_of_users.encode())
-            utils.updateFile(identifier, int(pc_num))
+                client_socket.send(str(number_of_users).encode())
+                client_socket.recv(100)
+                client_socket.send(b'found you, new')
+                utils.send_all(identifier, client_socket)
+
+            else:
+
+                utils.update_file(identifier, int(pc_num))
 
     client_socket.close()
     print('Client disconnected')
