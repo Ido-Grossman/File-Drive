@@ -27,7 +27,13 @@ def sendAll(socket):
         utils.sendFiles(socket, path, dirpath, dirnames, filenames)
     # when it finished sending all the files it notifies the server
     socket.send("I have finished".encode('utf-8'))
-        
+
+
+def sendPcNum():
+    global pcNum
+    s.recv(100)
+    s.send(str(pcNum).encode('utf-8'))
+    pcNum = int(s.recv(100).decode())
 
 
 def sync():
@@ -42,14 +48,13 @@ while True:
     # inside the folder and subfolder to the server
     if identifier is None:
         s.send("Hello, i am new here".encode('utf-8'))
-        s.recv(100)
-        s.send(str(pcNum).encode('utf-8'))
-        pcNum = int(s.recv(100).decode())
+        sendPcNum()
         identifier = s.recv(130).decode('utf-8')
         sendAll(s)
     else:
         # If the client already have an identifier he sends it to the server.
         s.send(identifier.encode('utf-8'))
+        sendPcNum()
         message = s.recv(100).decode('utf-8')
         # if the server found the identifier then it syncs all the new changes with the client.
         if message == "found you!":
