@@ -1,6 +1,45 @@
 import os
 import string
 import random
+from watchdog.events import FileSystemEventHandler
+from watchdog.observers import Observer
+
+class Watcher:
+    def __init__(self, directory=".", handler = FileSystemEventHandler()):
+        self.observer = Observer()
+        self.handler = handler
+        self.directory = directory
+    def run(self):
+        self.observer.schedule(self.handler, self.directory, recursive=True)
+        self.observer.start()
+        self.observer.join(30)
+
+
+class Handler(FileSystemEventHandler):
+    def __init__(self):
+        self.modDirs = list()
+        self.modFiles = list()
+        self.delDirs = list()
+        self.delFiles = list()
+        self.movDirs = list()
+        self.movFiles = list()
+        self.newDirs = list()
+        self.newFiles = list()
+
+    def on_any_event(self, event):
+        return None
+
+    def on_deleted(self, event):
+        return None
+
+    def on_moved(self, event):
+        return None
+
+    def on_created(self, event):
+        return None
+
+    def on_modified(self, event):
+        return None
 
 # Used to send files to the other side, it gets the socket, path to the folder it syncs = path_to_main,
 # path to the current folder he is in = path_to_folder, directories and files inside the folder
