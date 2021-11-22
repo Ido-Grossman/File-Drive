@@ -52,8 +52,8 @@ while True:
                 utils.send_all(identifier, client_socket)
 
             else:
-
-                utils.update_file(identifier, int(pc_num))
+                client_socket.send(b'found you!')
+                utils.update_file(client_socket, identifier, int(pc_num))
 
     client_socket.close()
     print('Client disconnected')
