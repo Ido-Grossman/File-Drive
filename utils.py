@@ -237,15 +237,6 @@ def send_path(socket, separator, path_to_main, path_to_folder):
     socket.send(os.path.relpath(path_to_folder, path_to_main).encode('utf-8'))
     socket.recv(2)
     return
-    # sends this os folders separator to the other side.
-    socket.send(separator.encode('utf-8'))
-    socket.recv(2)
-    # sends the absolute path to the main directory on this pc.
-    socket.send(path_to_main.encode('utf-8'))
-    socket.recv(2)
-    # sends the absolute path to the folder on this pc.
-    socket.send(path_to_folder.encode('utf-8'))
-    socket.recv(2)
 
 
 def send_sync(socket, path_to_main, event_type, is_directory, src_path, dest_path):
