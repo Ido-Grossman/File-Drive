@@ -25,7 +25,7 @@ class Handler(FileSystemEventHandler):
         if event.event_type == 'closed':
             return
         if event.event_type == 'moved':
-            details = (event.event_type, event.is_directory, event.src_path, event.src_path)
+            details = (event.event_type, event.is_directory, event.src_path, event.dest_path)
         else:
             details = (event.event_type, event.is_directory, event.src_path)
         self.changes.append(details)
@@ -38,6 +38,21 @@ def remove_prefix(to_remove, string1):
     if string1.startswith(to_remove):
         string1 = string1.lstrip(to_remove)
     return string1
+
+
+def send_file(socket, file_path):
+    # gets the size of the file and sends it to the other side
+    filesize = str(os.path.getsize(file_path))
+    socket.send(filesize.encode('utf-8'))
+    socket.recv(100)
+    # we open the file in read bytes mode and send all the bytes in the file to the other side.
+    f = open(file_path, "rb")
+    while True:
+        bytes_read = f.read(4096)
+        if not bytes_read:
+            break
+        socket.send(bytes_read)
+    f.close()
 
 
 # Used to send files to the other side, it gets the socket, path to the folder it syncs = path_to_main,
@@ -68,20 +83,10 @@ def send_files(socket, path_to_main, path_to_folder, directories, files):
     for file in files:
         # it gets the path to the file and gets is size and name and sends them to the server
         filepath = os.path.join(path_to_folder, file)
-        filesize = str(os.path.getsize(filepath))
         socket.send(file.encode('utf-8'))
         socket.recv(100)
-        socket.send(filesize.encode('utf-8'))
+        send_file(socket, filepath)
         socket.recv(100)
-        # we open the file in read bytes mode and send all the bytes in the file to the server.
-        f = open(filepath, "rb")
-        while True:
-            bytes_read = f.read(4096)
-            if not bytes_read:
-                break
-            socket.send(bytes_read)
-        socket.recv(100)
-        f.close()
 
 
 def recv_file(socket, path_to_main):
@@ -223,3 +228,39 @@ def seperate_path(socket):
     file_path.replace(seperator, os.sep)
     socket.send(b'hi')
     return file_path
+
+
+def send_path(socket, separator, path_to_main, path_to_folder):
+    # sends this os folders separator to the other side.
+    socket.send(separator.encode('utf-8'))
+    socket.recv(2)
+    socket.send(os.path.relpath(path_to_folder, path_to_main).encode('utf-8'))
+    socket.recv(2)
+    return
+    # sends this os folders separator to the other side.
+    socket.send(separator.encode('utf-8'))
+    socket.recv(2)
+    # sends the absolute path to the main directory on this pc.
+    socket.send(path_to_main.encode('utf-8'))
+    socket.recv(2)
+    # sends the absolute path to the folder on this pc.
+    socket.send(path_to_folder.encode('utf-8'))
+    socket.recv(2)
+
+
+def send_sync(socket, path_to_main, event_type, is_directory, src_path, dest_path):
+    # sends the event type of the file/folder (whether it moved/modified/ext.)
+    socket.send(event_type.encode('utf-8'))
+    socket.recv(2)
+    # send true if it's a directory and false otherwise.
+    socket.send(str(is_directory).encode('utf-8'))
+    socket.recv(2)
+    # gets the os folders separator.
+    separator = os.sep
+    # send the separator
+    send_path(socket, separator, os.path.abspath(path_to_main), os.path.abspath(src_path))
+    if dest_path is not None:
+        send_path(socket, separator, os.path.abspath(path_to_main), os.path.abspath(dest_path))
+    elif event_type == 'modified' and not is_directory:
+        send_file(socket, src_path)
+    socket.recv(100)
