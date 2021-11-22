@@ -1,7 +1,10 @@
 import socket
 import sys
 import os
+import time
+
 import utils
+from watchdog.observers import Observer
 
 # gets the arguments from the user and check if the user sent all the needed arguments as he should
 if len(sys.argv) < 5:
@@ -17,8 +20,6 @@ if len(sys.argv) == 6:
     identifier = sys.argv[5]
 trial = os.sep
 pcNum = 0
-handler = utils.Handler()
-watcher = utils.Watcher(path, handler)
 
 
 def send_pc_num(socket):
@@ -32,13 +33,24 @@ def send_pc_num(socket):
 
 
 def sync(socket, changes):
+    global path, timeOut
+    handler = utils.Handler(path)
+    observer = Observer()
+    observer.schedule(handler, path, recursive=True)
+    try:
+        while True:
+            time.sleep(timeOut)
+            for change in handler.changes:
+                if change[0] != 'moved':
+                    utils.send_sync(socket, path, change[0], change[1], change[2], None)
+                else:
+                    utils.send_sync(socket, path, change[0], change[1], change[2], change[3])
+            socket.send(b'I have finished')
+    except KeyboardInterrupt:
+        observer.stop()
+        observer.join()
     # loops over all the changed and sends the right parameters to send_sync
-    for change in changes:
-        if change[0] != 'moved':
-            utils.send_sync(socket, path, change[0], change[1], change[2], None)
-        else:
-            utils.send_sync(socket, path, change[0], change[1], change[2], change[3])
-    socket.send(b'I have finished')
+
 
 
 while True:
@@ -64,7 +76,7 @@ while True:
             utils.recv_file(s, path)
         # If the server found the identifier and the client folder is empty, the server sends the client everything
         elif message == "found you!":
-            sync(s, handler.changes)
+            sync(s)
         # If the server didn't find the identifier then the client sends everything to the server
         else:
             utils.send_all(path, s)

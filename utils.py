@@ -2,28 +2,15 @@ import os
 import string
 import random
 from watchdog.events import FileSystemEventHandler
-from watchdog.observers import Observer
-
-
-class Watcher:
-    def __init__(self, directory=".", handler=FileSystemEventHandler()):
-        self.observer = Observer()
-        self.handler = handler
-        self.directory = directory
-
-    def run(self, timeout):
-        self.observer.schedule(self.handler, self.directory, recursive=True)
-        self.observer.start()
-        self.observer.join(timeout)
-        self.observer.stop()
 
 
 class Handler(FileSystemEventHandler):
-    def __init__(self):
+    def __init__(self, path):
         self.changes = list()
+        self.path = path
 
     def on_any_event(self, event):
-        if event.event_type == 'closed':
+        if event.event_type == 'closed' or (event.event_type == 'modified' and event.src_path == self.path):
             return
         if event.event_type == 'moved':
             details = (event.event_type, event.is_directory, event.src_path, event.dest_path)
