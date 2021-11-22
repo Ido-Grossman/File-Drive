@@ -144,13 +144,60 @@ def get_path(identifier):
     return path
 
 
-def no_identifier(identifier):
+def recv_sync():
     return None
 
 
-def update_file(identifier):
-    return None
+def update_file(socket, identifier, pc_num):
+    message = 0
+    event_type = socket.recv(15).decode('utf-8')  # getting the event type
+    while message != "I have finished":
+        socket.send(b'hi')
+        is_dir = socket.recv(14).decode('utf-8')
+        if is_dir == 'True':
+            is_dir = True
+        else:
+            is_dir = False
+        path = seperate_path(socket)
+        path = os.path.join(identifier, path)
+        if event_type == "created":
+            if is_dir is True:
+                os.mkdir(path)
+            else:
+                file = open(path, 'w')
+                file.close()
+        if event_type == "moved":
+            dst_path = seperate_path(socket)
+            dst_path = os.path.join(identifier, dst_path)
+            try:
+                os.rename(path, dst_path)
+            except:
+                socket.send(b'finished')
+                message = socket.recv(100).decode('utf-8')
+                event_type = message
+                continue
 
+        if event_type == 'deleted':
+            os.remove(path)
+        if event_type == 'modified':
+            if is_dir is False:
+                file_size = socket.recv(100).decode('utf-8')
+                socket.send(b'hi')
+                file_size = int(file_size)
+                file = open(path, "wb")
+                counter = 0
+                # until we finished reading all the file, we will receive the next bytes and write them to the file.
+                while counter < file_size:
+                    # read 1024 bytes from the socket (receive)
+                    bytes_read = socket.recv(100000)
+                    counter += len(bytes_read)
+                    # write to the file the bytes we just received
+                    file.write(bytes_read)
+            else:
+                os.rename(path)
+        socket.send(b'finished')
+        message = socket.recv(100).decode('utf-8')
+        event_type = message
 
 # sends all the files that are in the folder
 def send_all(path, socket):
@@ -161,6 +208,15 @@ def send_all(path, socket):
     # when it finished sending all the files it notifies the server
     socket.send("I have finished".encode('utf-8'))
 
+def seperate_path(socket):
+    socket.send(b'hi')
+    seperator = socket.recv(100).decode('utf-8')
+    socket.send(b'hi')
+    file_path = socket.recv(100).decode('utf-8')
+    file_path.replace(seperator, os.sep)
+    socket.send(b'hi')
+    return file_path
+
 
 def send_path(socket, separator, path_to_main, path_to_folder):
     # sends this os folders separator to the other side.
@@ -169,15 +225,6 @@ def send_path(socket, separator, path_to_main, path_to_folder):
     socket.send(os.path.relpath(path_to_folder, path_to_main).encode('utf-8'))
     socket.recv(2)
     return
-    # sends this os folders separator to the other side.
-    socket.send(separator.encode('utf-8'))
-    socket.recv(2)
-    # sends the absolute path to the main directory on this pc.
-    socket.send(path_to_main.encode('utf-8'))
-    socket.recv(2)
-    # sends the absolute path to the folder on this pc.
-    socket.send(path_to_folder.encode('utf-8'))
-    socket.recv(2)
 
 
 def send_sync(socket, path_to_main, event_type, is_directory, src_path, dest_path):
