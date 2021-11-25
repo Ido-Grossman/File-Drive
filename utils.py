@@ -204,7 +204,10 @@ def update_file(socket, path_to_file, pc_num):
                     except:
                         delete_all_things(path)
             else:
-                os.rmdir(path)
+                try:
+                    os.rmdir(path)
+                except:
+                    delete_all_things(path)
         if event_type == 'modified':
             if is_dir is False:
                 file_size = socket.recv(100).decode('utf-8')

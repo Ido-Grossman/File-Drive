@@ -55,6 +55,7 @@ while True:
 
             else:
                 is_updated = False
+                linux_modified = False
                 client_socket.send(b'found you!')
                 changed_things = utils.update_file(client_socket, identifier, int(pc_num))
                 curr_dict = num_of_users_per_identifier[identifier]
@@ -67,10 +68,10 @@ while True:
                         is_updated = True
                         src_path = os.path.join(identifier, change[2])
                         if change[0] != 'moved':
-                            utils.send_sync(client_socket, identifier, change[0], change[1], src_path, None)
+                            linux_modified = utils.send_sync(client_socket, identifier, change[0], change[1], src_path, None, linux_modified)
                         else:
                             dst_path = os.path.join(identifier, change[3])
-                            utils.send_sync(client_socket, identifier, change[0], change[1], src_path, dst_path)
+                            linux_modified = utils.send_sync(client_socket, identifier, change[0], change[1], src_path, dst_path, linux_modified)
 
                 client_socket.send(b'I have finished')
                 if is_updated is True:
