@@ -263,7 +263,12 @@ def send_path(socket, separator, path_to_main, path_to_folder):
     return
 
 
-def send_sync(socket, path_to_main, event_type, is_directory, src_path, dest_path):
+def send_sync(socket, path_to_main, event_type, is_directory, src_path, dest_path, linux_modified):
+    if linux_modified and event_type == 'moved':
+        event_type = 'modified'
+        src_path = dest_path
+        dest_path = None
+        linux_modified = False
     # sends the event type of the file/folder (whether it moved/modified/ext.)
     socket.send(event_type.encode('utf-8'))
     socket.recv(2)
@@ -279,6 +284,9 @@ def send_sync(socket, path_to_main, event_type, is_directory, src_path, dest_pat
     elif (event_type == 'modified' or event_type == 'created') and not is_directory:
         send_file(socket, src_path)
     socket.recv(100)
+    if str(src_path).find('gooutputstream'):
+        linux_modified = True
+    return linux_modified
 
 
 def delete_all_things(path):

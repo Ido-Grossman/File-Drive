@@ -32,6 +32,7 @@ def send_pc_num(socket):
 def sync(s):
     global path, timeOut, pcNum
     handler = utils.Handler(path)
+    linux_modified = False
     try:
         while True:
             observer = Observer()
@@ -48,9 +49,9 @@ def sync(s):
                 s.recv(100).decode('utf-8')
             for change in handler.changes:
                 if change[0] != 'moved':
-                    utils.send_sync(s, path, change[0], change[1], change[2], None)
+                    linux_modified = utils.send_sync(s, path, change[0], change[1], change[2], None, linux_modified)
                 else:
-                    utils.send_sync(s, path, change[0], change[1], change[2], change[3])
+                    linux_modified = utils.send_sync(s, path, change[0], change[1], change[2], change[3], linux_modified)
             handler.reset_changes()
             s.send(b'I have finished')
             observer.stop()
