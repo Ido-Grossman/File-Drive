@@ -6,7 +6,7 @@ from watchdog.events import FileSystemEventHandler
 
 class Handler(FileSystemEventHandler):
     def __init__(self, path):
-        self.changes = list()
+        self.changes = []
         self.path = path
 
     def on_any_event(self, event):
@@ -30,9 +30,16 @@ def remove_prefix(to_remove, string1):
 
 def send_file(socket, file_path):
     # gets the size of the file and sends it to the other side
-    filesize = str(os.path.getsize(file_path))
-    socket.send(filesize.encode('utf-8'))
-    socket.recv(100)
+    try:
+        filesize = str(os.path.getsize(file_path))
+        socket.send(filesize.encode('utf-8'))
+        socket.recv(100)
+        if filesize == '0':
+            return
+    except:
+        socket.send('0'.encode('utf-8'))
+        socket.recv(2)
+        return
     # we open the file in read bytes mode and send all the bytes in the file to the other side.
     f = open(file_path, "rb")
     while True:
@@ -144,6 +151,8 @@ def get_path(identifier):
     return path
 
 
+def update_file(socket, identifier, pc_num):
+    message = 0
 def recv_sync():
     return None
 
@@ -225,6 +234,8 @@ def update_file(socket, path_to_file, pc_num):
         list_of_changes.append((event_type, is_dir, src_path, dst_path_from_client))
         event_type = message
     return list_of_changes
+
+
 # sends all the files that are in the folder
 def send_all(path, socket):
     # gets all the files in the folder and for folder inside it sends all the files and folders it contains
@@ -233,6 +244,7 @@ def send_all(path, socket):
         send_files(socket, path, dirpath, dirnames, filenames)
     # when it finished sending all the files it notifies the server
     socket.send("I have finished".encode('utf-8'))
+
 
 def seperate_path(socket):
     socket.send(b'hi')
@@ -267,7 +279,7 @@ def send_sync(socket, path_to_main, event_type, is_directory, src_path, dest_pat
     send_path(socket, separator, os.path.abspath(path_to_main), os.path.abspath(src_path))
     if dest_path is not None:
         send_path(socket, separator, os.path.abspath(path_to_main), os.path.abspath(dest_path))
-    elif event_type == 'modified' and not is_directory:
+    elif (event_type == 'modified' or event_type == 'created') and not is_directory:
         send_file(socket, src_path)
     socket.recv(100)
 
