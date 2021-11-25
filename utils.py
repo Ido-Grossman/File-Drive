@@ -222,7 +222,10 @@ def update_file(socket, path_to_file, pc_num):
                         file.write(bytes_read)
                     file.close()
             else:
-                os.rename(path, path)
+                try:
+                    os.rename(path, path)
+                except:
+                    continue
         socket.send(b'finished')
         message = socket.recv(100).decode('utf-8')
         list_of_changes.append((event_type, is_dir, src_path, dst_path_from_client))
