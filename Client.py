@@ -32,11 +32,11 @@ def send_pc_num(socket):
 def sync(s):
     global path, timeOut, pcNum
     handler = utils.Handler(path)
-    observer = Observer()
-    observer.schedule(handler, path, recursive=True)
-    observer.start()
     try:
         while True:
+            observer = Observer()
+            observer.schedule(handler, path, recursive=True)
+            observer.start()
             if s is None:
                 time.sleep(timeOut)
                 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -51,11 +51,12 @@ def sync(s):
                     utils.send_sync(s, path, change[0], change[1], change[2], None)
                 else:
                     utils.send_sync(s, path, change[0], change[1], change[2], change[3])
-            s.send(b'I have finished')
-            print('finished')
             handler.reset_changes()
-            # utils.update_file(s, path, pcNum)
+            s.send(b'I have finished')
+            observer.stop()
+            utils.update_file(s, path, pcNum)
             s.close()
+            print('finished')
             s = None
     except KeyboardInterrupt:
         observer.stop()
@@ -76,6 +77,7 @@ while True:
         identifier = s.recv(130).decode('utf-8')
         f = open('identifier.txt', 'w')
         f.write(identifier)
+        f.close()
         utils.send_all(path, s)
         print('finished')
         s.close()
