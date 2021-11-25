@@ -284,7 +284,7 @@ def send_sync(socket, path_to_main, event_type, is_directory, src_path, dest_pat
     elif (event_type == 'modified' or event_type == 'created') and not is_directory:
         send_file(socket, src_path)
     socket.recv(100)
-    if str(src_path).find('gooutputstream'):
+    if str(src_path).find('gooutputstream') != -1:
         linux_modified = True
     return linux_modified
 
