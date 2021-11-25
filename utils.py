@@ -148,27 +148,41 @@ def recv_sync():
     return None
 
 
-def update_file(socket, identifier, pc_num):
-    message = 0
+def update_file(socket, path_to_file, pc_num):
+    list_of_changes = []
     event_type = socket.recv(15).decode('utf-8')  # getting the event type
+    message = event_type
     while message != "I have finished":
+        dst_path_from_client = None
         socket.send(b'hi')
         is_dir = socket.recv(14).decode('utf-8')
         if is_dir == 'True':
             is_dir = True
         else:
             is_dir = False
-        path = seperate_path(socket)
-        path = os.path.join(identifier, path)
+        path, src_path = seperate_path(socket)
+        path = os.path.join(path_to_file, path)
         if event_type == "created":
             if is_dir is True:
                 os.mkdir(path)
             else:
-                file = open(path, 'w')
+                file_size = socket.recv(100).decode('utf-8')
+                socket.send(b'hi')
+                file_size = int(file_size)
+                file = open(path, "wb")
+                if file_size != 0:
+                    counter = 0
+                    # until we finished reading all the file, we will receive the next bytes and write them to the file.
+                    while counter < file_size:
+                        # read 1024 bytes from the socket (receive)
+                        bytes_read = socket.recv(100000)
+                        counter += len(bytes_read)
+                        # write to the file the bytes we just received
+                        file.write(bytes_read)
                 file.close()
         if event_type == "moved":
-            dst_path = seperate_path(socket)
-            dst_path = os.path.join(identifier, dst_path)
+            dst_path, dst_path_from_client = seperate_path(socket)
+            dst_path = os.path.join(path_to_file, dst_path)
             try:
                 os.rename(path, dst_path)
             except:
@@ -178,27 +192,39 @@ def update_file(socket, identifier, pc_num):
                 continue
 
         if event_type == 'deleted':
-            os.remove(path)
+            if is_dir is False:
+                try:
+                    os.remove(path)
+                except:
+                    try:
+                        os.rmdir(path)
+                    except:
+                        delete_all_things(path)
+            else:
+                os.rmdir(path)
         if event_type == 'modified':
             if is_dir is False:
                 file_size = socket.recv(100).decode('utf-8')
                 socket.send(b'hi')
                 file_size = int(file_size)
                 file = open(path, "wb")
-                counter = 0
-                # until we finished reading all the file, we will receive the next bytes and write them to the file.
-                while counter < file_size:
-                    # read 1024 bytes from the socket (receive)
-                    bytes_read = socket.recv(100000)
-                    counter += len(bytes_read)
-                    # write to the file the bytes we just received
-                    file.write(bytes_read)
+                if file_size != 0:
+                    counter = 0
+                    # until we finished reading all the file, we will receive the next bytes and write them to the file.
+                    while counter < file_size:
+                        # read 1024 bytes from the socket (receive)
+                        bytes_read = socket.recv(100000)
+                        counter += len(bytes_read)
+                        # write to the file the bytes we just received
+                        file.write(bytes_read)
+                    file.close()
             else:
-                os.rename(path)
+                os.rename(path, path)
         socket.send(b'finished')
         message = socket.recv(100).decode('utf-8')
+        list_of_changes.append((event_type, is_dir, src_path, dst_path_from_client))
         event_type = message
-
+    return list_of_changes
 # sends all the files that are in the folder
 def send_all(path, socket):
     # gets all the files in the folder and for folder inside it sends all the files and folders it contains
@@ -213,9 +239,10 @@ def seperate_path(socket):
     seperator = socket.recv(100).decode('utf-8')
     socket.send(b'hi')
     file_path = socket.recv(100).decode('utf-8')
-    file_path.replace(seperator, os.sep)
+    src_path = file_path
+    file_path = file_path.replace(seperator, os.sep)
     socket.send(b'hi')
-    return file_path
+    return file_path, src_path
 
 
 def send_path(socket, separator, path_to_main, path_to_folder):
@@ -243,3 +270,14 @@ def send_sync(socket, path_to_main, event_type, is_directory, src_path, dest_pat
     elif event_type == 'modified' and not is_directory:
         send_file(socket, src_path)
     socket.recv(100)
+
+def delete_all_things(path):
+    files = os.walk(path)
+    for(dirpath, dirnames, filenames) in files:
+        for file_name in filenames:
+            file = os.path.join(dirpath, file_name)
+            os.remove(file)
+        for dir_name in dirnames:
+            dir = os.path.join(dirpath, dir_name)
+            os.rmdir(dir)
+    os.rmdir(path)

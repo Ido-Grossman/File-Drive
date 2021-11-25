@@ -26,7 +26,7 @@ while True:
         identifier = utils.create_identifier()
         client_socket.recv(100)
         print(identifier)
-        num_of_users_per_identifier[identifier] = 1
+        num_of_users_per_identifier[identifier] = {1: []}
         client_socket.send(identifier.encode())  # sending the identifier
         path = utils.create_new_client(identifier)  # then we create the file with the name of the identifier
         utils.recv_file(client_socket, path)
@@ -37,15 +37,16 @@ while True:
             client_socket.send(b'1')  # sending the number of pc
             client_socket.recv(100)
             client_socket.send(b'not found')
-            num_of_users_per_identifier[identifier] = 1
+            num_of_users_per_identifier[identifier] = {1: []}
             print(identifier)
             path = utils.create_new_client(identifier)
             utils.recv_file(client_socket, path)
         else:       # if the identifier was found
 
             if int(pc_num) == 0:
+                number_of_users = sorted(num_of_users_per_identifier[identifier].keys())[-1]
                 number_of_users += 1
-                num_of_users_per_identifier[identifier] = number_of_users
+                num_of_users_per_identifier[identifier][number_of_users] = []
                 client_socket.send(str(number_of_users).encode())
                 client_socket.recv(100)
                 client_socket.send(b'found you, new')
@@ -53,7 +54,18 @@ while True:
 
             else:
                 client_socket.send(b'found you!')
-                utils.update_file(client_socket, identifier, int(pc_num))
-
+                changed_things = utils.update_file(client_socket, identifier, int(pc_num))
+                curr_dict = num_of_users_per_identifier[identifier]
+                for keys in curr_dict:
+                    if int(pc_num) == keys:
+                        continue
+                    curr_dict[keys].append(changed_things)
+                    for change in curr_dict[int(pc_num)]:
+                        if change[0] != 'moved':
+                            utils.send_sync(socket, identifier, change[0], change[1], change[2], None)
+                        else:
+                            utils.send_sync(socket, identifier, change[0], change[1], change[2], change[3])
+                client_socket.send(b'I have finished')
+                curr_dict[int(pc_num)].clear()
     client_socket.close()
     print('Client disconnected')
