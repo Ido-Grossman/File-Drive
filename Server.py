@@ -1,3 +1,4 @@
+import os
 import socket
 import sys
 import utils
@@ -53,19 +54,26 @@ while True:
                 utils.send_all(identifier, client_socket)
 
             else:
+                is_updated = False
                 client_socket.send(b'found you!')
                 changed_things = utils.update_file(client_socket, identifier, int(pc_num))
                 curr_dict = num_of_users_per_identifier[identifier]
                 for keys in curr_dict:
-                    if int(pc_num) == keys:
+                    if int(pc_num) == keys or not changed_things:
                         continue
                     curr_dict[keys].append(changed_things)
-                    for change in curr_dict[int(pc_num)]:
+                for changes in curr_dict[int(pc_num)]:
+                    for change in changes:
+                        is_updated = True
+                        src_path = os.path.join(identifier, change[2])
                         if change[0] != 'moved':
-                            utils.send_sync(socket, identifier, change[0], change[1], change[2], None)
+                            utils.send_sync(client_socket, identifier, change[0], change[1], src_path, None)
                         else:
-                            utils.send_sync(socket, identifier, change[0], change[1], change[2], change[3])
+                            dst_path = os.path.join(identifier, change[3])
+                            utils.send_sync(client_socket, identifier, change[0], change[1], src_path, dst_path)
+
                 client_socket.send(b'I have finished')
-                curr_dict[int(pc_num)].clear()
+                if is_updated is True:
+                    curr_dict[int(pc_num)].clear()
     client_socket.close()
     print('Client disconnected')

@@ -151,12 +151,6 @@ def get_path(identifier):
     return path
 
 
-def update_file(socket, identifier, pc_num):
-    message = 0
-def recv_sync():
-    return None
-
-
 def update_file(socket, path_to_file, pc_num):
     list_of_changes = []
     event_type = socket.recv(15).decode('utf-8')  # getting the event type
@@ -283,8 +277,9 @@ def send_sync(socket, path_to_main, event_type, is_directory, src_path, dest_pat
         send_file(socket, src_path)
     socket.recv(100)
 
+
 def delete_all_things(path):
-    files = os.walk(path)
+    files = os.walk(path, False)
     for(dirpath, dirnames, filenames) in files:
         for file_name in filenames:
             file = os.path.join(dirpath, file_name)
