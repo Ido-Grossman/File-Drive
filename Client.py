@@ -57,7 +57,6 @@ def sync(s):
             observer.stop()
             utils.update_file(s, path, pcNum)
             s.close()
-            print('finished')
             s = None
     except KeyboardInterrupt:
         observer.stop()
@@ -80,7 +79,6 @@ while True:
         f.write(identifier)
         f.close()
         utils.send_all(path, s)
-        print('finished')
         s.close()
         sync(None)
     else:
