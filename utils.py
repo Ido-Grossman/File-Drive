@@ -33,7 +33,6 @@ def send_file(socket, file_path):
     try:
         filesize = str(os.path.getsize(file_path))
         socket.send(filesize.encode('utf-8'))
-        print(filesize)
         socket.recv(100)
         if filesize == '0':
             return
@@ -214,7 +213,6 @@ def update_file(socket, path_to_file, pc_num):
             if is_dir is False:
                 file_size = socket.recv(100).decode('utf-8')
                 socket.send(b'hi')
-                print("received " + file_size)
                 file_size = int(file_size)
                 file = open(path, "wb")
                 if file_size != 0:
