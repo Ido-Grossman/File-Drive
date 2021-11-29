@@ -13,9 +13,7 @@ portNum = int(sys.argv[1])
 server.bind(('', portNum))
 server.listen(5)
 while True:
-    print("waiting for connection")
     client_socket, client_address = server.accept()
-    print('Connection from: ', client_address)
     data = client_socket.recv(130)  # we receive an identifier from the client at first
     identifier = data.decode('utf8')
     client_socket.send(b'pc num?')
@@ -77,4 +75,3 @@ while True:
                 if is_updated is True:
                     curr_dict[int(pc_num)].clear()
     client_socket.close()
-    print('Client disconnected')
