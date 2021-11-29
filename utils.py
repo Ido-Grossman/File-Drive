@@ -116,23 +116,16 @@ def recv_file(socket, path_to_main):
             message = socket.recv(100).decode('utf-8')
             socket.send(b'hi')
             file_size = int(message)
-            file = open(file_path, "wb")
-            counter = 0
-            # until we finished reading all the file, we will receive the next bytes and write them to the file.
-            while counter < file_size:
-                # read 1024 bytes from the socket (receive)
-                bytes_read = socket.recv(100000)
-                counter += len(bytes_read)
-                # write to the file the bytes we just received
-                file.write(bytes_read)
+            write_to_file(file_size, file_path, socket)
             socket.send(b'finished')
-            file.close()
             message = socket.recv(100).decode('utf-8')
 
 
+# creating a random 128 length identifier
 def create_identifier():
     length = 128
-    random_identifier = ''.join(random.choices(string.ascii_lowercase + string.ascii_uppercase + string.digits, k=length))
+    random_identifier = ''.join(
+        random.choices(string.ascii_lowercase + string.ascii_uppercase + string.digits, k=length))
     return str(random_identifier)
 
 
@@ -151,7 +144,7 @@ def get_path(identifier):
     return path
 
 
-def update_file(socket, path_to_file, pc_num):
+def update_file(socket, path_to_file):
     list_of_changes = []
     event_type = socket.recv(15).decode('utf-8')  # getting the event type
     message = event_type
@@ -159,72 +152,35 @@ def update_file(socket, path_to_file, pc_num):
         dst_path_from_client = None
         socket.send(b'hi')
         is_dir = socket.recv(14).decode('utf-8')
-        if is_dir == 'True':
-            is_dir = True
-        else:
-            is_dir = False
+        is_dir = determine_if_dir(is_dir)  # checking if this is a directory or not
         socket.send(b'hi')
-        path, src_path = seperate_path(socket)
+        path = separate_path(socket)
+        src_path = path
         path = os.path.join(path_to_file, path)
         if event_type == "created":
-            if is_dir is True:
-                os.mkdir(path)
-            else:
-                file_size = socket.recv(100).decode('utf-8')
-                socket.send(b'hi')
-                file_size = int(file_size)
-                file = open(path, "wb")
-                if file_size != 0:
-                    counter = 0
-                    # until we finished reading all the file, we will receive the next bytes and write them to the file.
-                    while counter < file_size:
-                        # read 1024 bytes from the socket (receive)
-                        bytes_read = socket.recv(100000)
-                        counter += len(bytes_read)
-                        # write to the file the bytes we just received
-                        file.write(bytes_read)
-                file.close()
+            create_event(is_dir, path, socket)
         if event_type == "moved":
-            dst_path, dst_path_from_client = seperate_path(socket)
+
+            dst_path = separate_path(socket)
+            dst_path_from_client = dst_path  # here we receive the dst path from the client
             dst_path = os.path.join(path_to_file, dst_path)
             try:
-                os.rename(path, dst_path)
+                os.rename(path, dst_path)  # watchdog when a folder is renamed, first moves the intern folders so we
+                # try first
             except:
-                socket.send(b'finished')
+                socket.send(b'finished')  # if it moves the intern folders we enter here and we ignore the message
                 message = socket.recv(100).decode('utf-8')
                 event_type = message
                 continue
 
         if event_type == 'deleted':
-            if is_dir is False:
-                try:
-                    os.remove(path)
-                except:
-                    try:
-                        os.rmdir(path)
-                    except:
-                        delete_all_things(path)
-            else:
-                try:
-                    os.rmdir(path)
-                except:
-                    delete_all_things(path)
+            deleted_event(path, is_dir)
         if event_type == 'modified':
             if is_dir is False:
                 file_size = socket.recv(100).decode('utf-8')
                 socket.send(b'hi')
                 file_size = int(file_size)
-                file = open(path, "wb")
-                if file_size != 0:
-                    counter = 0
-                    # until we finished reading all the file, we will receive the next bytes and write them to the file.
-                    while counter < file_size:
-                        # read 1024 bytes from the socket (receive)
-                        bytes_read = socket.recv(100000)
-                        counter += len(bytes_read)
-                        # write to the file the bytes we just received
-                        file.write(bytes_read)
-                    file.close()
+                write_to_file(file_size, path, socket)
             else:
                 try:
                     os.rename(path, path)
@@ -241,19 +197,19 @@ def update_file(socket, path_to_file, pc_num):
 def send_all(path, socket):
     # gets all the files in the folder and for folder inside it sends all the files and folders it contains
     files = os.walk(path, True)
-    for (dirpath, dirnames, filenames) in files:
-        send_files(socket, path, dirpath, dirnames, filenames)
+    for (dirpath, dir_names, filenames) in files:
+        send_files(socket, path, dirpath, dir_names, filenames)
     # when it finished sending all the files it notifies the server
     socket.send("I have finished".encode('utf-8'))
 
 
-def seperate_path(socket):
-    seperator = socket.recv(100).decode('utf-8')
+def separate_path(socket):
+    separator = socket.recv(100).decode('utf-8')
     socket.send(b'hi')
     file_path = socket.recv(100).decode('utf-8')
-    file_path = file_path.replace(seperator, os.sep)
+    file_path = file_path.replace(separator, os.sep)
     socket.send(b'hi')
-    return file_path, file_path
+    return file_path
 
 
 def send_path(socket, separator, path_to_main, path_to_folder):
@@ -292,11 +248,89 @@ def send_sync(socket, path_to_main, event_type, is_directory, src_path, dest_pat
 
 def delete_all_things(path):
     files = os.walk(path, False)
-    for(dirpath, dirnames, filenames) in files:
+    for (dir_path, dir_names, filenames) in files:  # if we receive a folder with items in it, we delete all of the
+        # content within in and then delete the folder
         for file_name in filenames:
-            file = os.path.join(dirpath, file_name)
+            file = os.path.join(dir_path, file_name)
             os.remove(file)
-        for dir_name in dirnames:
-            dir = os.path.join(dirpath, dir_name)
-            os.rmdir(dir)
+        for dir_name in dir_names:
+            directory = os.path.join(dir_path, dir_name)
+            os.rmdir(directory)
     os.rmdir(path)
+
+
+def updating_the_changes_to_all_users(pc_num_dict, pc_num, changed_things):
+    for keys in pc_num_dict:
+        if pc_num == keys or not changed_things:  # we update the other pc nums and not the current one
+            continue
+        pc_num_dict[keys].append(changed_things)
+
+
+def updating_current_user(pc_num_dict, pc_num, identifier, client_socket):
+    is_updated = False
+    linux_modified = False
+    for changes in pc_num_dict[int(pc_num)]:  # if we have changes for current pc num we update him
+        for change in changes:
+            is_updated = True  # we receive the update with 3 elements, and if it is moved with 4 elements
+            event_type = change[0]
+            is_dir = change[1]
+            src_path_from_client = change[2]
+            src_path = os.path.join(identifier, src_path_from_client)
+            if event_type != 'moved':  # if the event type was not moved we dont have a dst path
+                linux_modified = send_sync(client_socket, identifier, event_type, is_dir, src_path, None,
+                                           linux_modified)
+            else:
+                dst_path_from_client = change[3]
+                dst_path = os.path.join(identifier, dst_path_from_client)
+                linux_modified = send_sync(client_socket, identifier, event_type, is_dir, src_path, dst_path,
+                                           linux_modified)
+    return is_updated
+
+
+def determine_if_dir(message):
+    if message == 'True':
+        message = True
+    else:
+        message = False
+    return message
+
+
+def create_event(is_dir, path, socket):
+    if is_dir is True:
+        os.mkdir(path)  # if this is a dir we just create a dir with the path
+    else:  # if it is not a dir
+        file_size = socket.recv(100).decode('utf-8')  # we get the file size from the client
+        socket.send(b'hi')
+        file_size = int(file_size)
+        write_to_file(file_size, path, socket)
+
+
+def deleted_event(path, is_dir):
+    if is_dir is False:
+        try:  # once in a while when we delete a folder watchdog sends False for the is_directory so we try..
+            os.remove(path)
+        except:
+            try:
+                os.rmdir(path)
+            except:
+                delete_all_things(path)
+    else:
+        try:
+            os.rmdir(path)  # we check if the folder is empty, if not we go and erase all the content first
+        except:
+            delete_all_things(path)
+
+
+#  write to a file
+def write_to_file(file_size, path, socket):
+    file = open(path, "wb")  # then we open it to write
+    if file_size != 0:
+        counter = 0
+        # until we finished reading all the file, we will receive the next bytes and write them to the file.
+        while counter < file_size:
+            # read 1024 bytes from the socket (receive)
+            bytes_read = socket.recv(100000)
+            counter += len(bytes_read)
+            # write to the file the bytes we just received
+            file.write(bytes_read)
+    file.close()
