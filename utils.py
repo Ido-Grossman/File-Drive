@@ -15,7 +15,7 @@ class Handler(FileSystemEventHandler):
         if event.event_type == 'moved':
             details = (event.event_type, event.is_directory, event.src_path, event.dest_path)
         else:
-            details = (event.event_type, event.is_directory, event.src_path)
+            details = (event.event_type, event.is_directory, event.src_path, None)
         self.changes.append(details)
 
     def reset_changes(self):
@@ -31,12 +31,15 @@ def remove_prefix(to_remove, string1):
 def send_file(socket, file_path):
     # gets the size of the file and sends it to the other side
     try:
+        # we try to open the file if it exists and send is size
         filesize = str(os.path.getsize(file_path))
         socket.send(filesize.encode('utf-8'))
         socket.recv(100)
+        # if the size is 0 we don't need to send is content so we return.
         if filesize == '0':
             return
     except:
+        # if the file couldn't be found we send that the size is 0.
         socket.send('0'.encode('utf-8'))
         socket.recv(2)
         return
@@ -58,6 +61,8 @@ def send_files(socket, path_to_main, path_to_folder, directories, files):
         local_path = str(path_to_folder).removeprefix(path_to_main)
     except:
         local_path = remove_prefix(path_to_main, path_to_folder)
+    # sends the path to the other side by sending the path is: and then sends folder by folder in the path to the
+    # folder we are in right now.
     socket.send("the path is:".encode('utf-8'))
     socket.recv(100)
     separator = os.sep
@@ -76,10 +81,11 @@ def send_files(socket, path_to_main, path_to_folder, directories, files):
     socket.send("the files are:".encode('utf-8'))
     socket.recv(100)
     for file in files:
-        # it gets the path to the file and gets is size and name and sends them to the server
+        # it gets the path to the file and gets is size and name and sends them to the other side.
         filepath = os.path.join(path_to_folder, file)
         socket.send(file.encode('utf-8'))
         socket.recv(100)
+        # sends the file contents to the other side.
         send_file(socket, filepath)
         socket.recv(100)
 
@@ -216,16 +222,21 @@ def send_path(socket, separator, path_to_main, path_to_folder):
     # sends this os folders separator to the other side.
     socket.send(separator.encode('utf-8'))
     socket.recv(2)
+    # sends the relative path to the folder from the folder we want to sync.
     socket.send(os.path.relpath(path_to_folder, path_to_main).encode('utf-8'))
     socket.recv(2)
     return
 
 
 def send_sync(socket, path_to_main, event_type, is_directory, src_path, dest_path, linux_modified):
+    # if a modified change happens to linux he updates it to move so we detect it by goutputstream and
+    # if it happened we change the type to modified and set the source path as the file path and dst_path to none
     if linux_modified and event_type == 'moved':
         event_type = 'modified'
         src_path = dest_path
         dest_path = None
+    # when modified on linux it creates new file in goutputstream and in the end moves it to the file name
+    # so if it happens we don't want to detect it, only to return true.
     if str(src_path).find('goutputstream') != -1:
         return True
     # sends the event type of the file/folder (whether it moved/modified/ext.)
@@ -238,10 +249,13 @@ def send_sync(socket, path_to_main, event_type, is_directory, src_path, dest_pat
     separator = os.sep
     # send the separator
     send_path(socket, separator, os.path.abspath(path_to_main), os.path.abspath(src_path))
+    # if there is dst_path we are in the move event_Type so we send the dst_path.
     if dest_path is not None:
         send_path(socket, separator, os.path.abspath(path_to_main), os.path.abspath(dest_path))
+    # if the event is modified or created we need to send the file contents.
     elif (event_type == 'modified' or event_type == 'created') and not is_directory:
         send_file(socket, src_path)
+    # receive the finish message from server and return false cause it's not linux modified.
     socket.recv(100)
     return False
 
