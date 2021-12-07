@@ -1,12 +1,4 @@
 import socket
-s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-s.connect(('25.84.19.151', 12346))
-s.send(b'hello')
-data = s.recv(100)
-print("Server sent: ", data)
-s.close()
-exit(0)
-import socket
 import sys
 import time
 
