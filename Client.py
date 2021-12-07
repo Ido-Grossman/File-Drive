@@ -1,9 +1,19 @@
 import socket
+s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+s.connect(('25.84.19.151', 12346))
+s.send(b'hello')
+data = s.recv(100)
+print("Server sent: ", data)
+s.close()
+exit(0)
+import socket
 import sys
 import time
 
 import utils
 from watchdog.observers import Observer
+
+
 
 # gets the arguments from the user and check if the user sent all the needed arguments as he should
 if len(sys.argv) < 5:
