@@ -46,7 +46,7 @@ def send_file(socket, file_path):
     # we open the file in read bytes mode and send all the bytes in the file to the other side.
     f = open(file_path, "rb")
     while True:
-        bytes_read = f.read(4096)
+        bytes_read = f.read(100000)
         if not bytes_read:
             break
         socket.send(bytes_read)
