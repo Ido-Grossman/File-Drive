@@ -5,8 +5,6 @@ import time
 import utils
 from watchdog.observers import Observer
 
-
-
 # gets the arguments from the user and check if the user sent all the needed arguments as he should
 if len(sys.argv) < 5:
     exit(-1)
@@ -49,7 +47,7 @@ def sync(sock):
     linux_modified = False
     try:
         while True:
-            # if the sock is not none it means we are already connected to the server so we don't need to connect again
+            # if the sock is not none it means we are already connected to the server, so we don't need to connect again
             if sock is None:
                 time.sleep(timeOut)
                 sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -59,7 +57,7 @@ def sync(sock):
                 sock.recv(100)
                 send_pc_num(sock)
                 sock.recv(100).decode('utf-8')
-            # we go through each change the observer caught and sends it's details to the server with utils.send_sync
+            # we go through each change the observer caught and sends its details to the server with utils.send_sync
             for change in handler.changes:
                 event_type = change[0]
                 is_folder = change[1]
