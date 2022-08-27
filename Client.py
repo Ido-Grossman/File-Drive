@@ -17,16 +17,16 @@ if len(sys.argv) == 6:
     if len(sys.argv[5]) != 128:
         exit(-1)
     identifier = sys.argv[5]
-pcNum = 0
+pc_num = 0
 
 
 # the function is used to send the pc number to the server.
 def send_pc_num(sock):
-    global pcNum
-    sock.send(str(pcNum).encode('utf-8'))
-    if pcNum != 0:
+    global pc_num
+    sock.send(str(pc_num).encode('utf-8'))
+    if pc_num != 0:
         return
-    pcNum = int(sock.recv(100).decode())
+    pc_num = int(sock.recv(100).decode())
     sock.send(b'hi')
 
 
@@ -49,6 +49,7 @@ def sync(sock):
         while True:
             # if the sock is not none it means we are already connected to the server, so we don't need to connect again
             if sock is None:
+                # If we aren't connected to the server we will sleep for a few seconds.
                 time.sleep(timeOut)
                 sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                 sock.connect((ip, port))
@@ -87,35 +88,35 @@ def sync(sock):
 
 while True:
     # gets the socket from the os and connects to the server
-    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    sckt = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     # if this is a new client it notifies the server that he is new and gets is notifier and then sends everything
     # inside the folder and sub folder to the server
     if identifier is None:
-        s.connect((ip, port))
-        s.send("Hello, i am new here".encode('utf-8'))
-        s.recv(100)
-        send_pc_num(s)
-        identifier = s.recv(130).decode('utf-8')
+        sckt.connect((ip, port))
+        sckt.send("Hello, i am new here".encode('utf-8'))
+        sckt.recv(100)
+        send_pc_num(sckt)
+        identifier = sckt.recv(130).decode('utf-8')
         f = open('identifier.txt', 'w')
         f.write(identifier)
         f.close()
-        utils.send_all(path, s)
-        s.close()
+        utils.send_all(path, sckt)
+        sckt.close()
         sync(None)
     else:
-        s.connect((ip, port))
+        sckt.connect((ip, port))
         # If the client already have an identifier he sends it to the server.
-        s.send(identifier.encode('utf-8'))
-        s.recv(100)
-        send_pc_num(s)
-        message = s.recv(100).decode('utf-8')
+        sckt.send(identifier.encode('utf-8'))
+        sckt.recv(100)
+        send_pc_num(sckt)
+        message = sckt.recv(100).decode('utf-8')
         # If the server found the identifier and the client folder is empty, the server sends the client everything
         if message == "found you, new":
-            utils.recv_file(s, path)
+            utils.recv_file(sckt, path)
         # if the server found the identifier then it syncs all the new changes with the client.
         elif message == "found you!":
-            sync(s)
+            sync(sckt)
         # If the server didn't find the identifier then the client sends everything to the server
         else:
-            utils.send_all(path, s)
-        s.close()
+            utils.send_all(path, sckt)
+        sckt.close()

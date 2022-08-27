@@ -23,7 +23,7 @@ while True:
         client_socket.send(b'1')    # sending the number of pc
         identifier = utils.create_identifier()  # we create a random identifier
         client_socket.recv(100)
-        num_of_users_per_identifier[identifier] = {1: []}  # this is a new identifier so we create the first dic
+        num_of_users_per_identifier[identifier] = {1: []}  # this is a new identifier, so we create the first dic
         client_socket.send(identifier.encode())  # sending the identifier
         path = utils.create_new_client(identifier)  # then we create the file with the name of the identifier
         utils.recv_file(client_socket, path)  # receiving the entire folder to the identifier folder
@@ -46,7 +46,7 @@ while True:
                 client_socket.send(str(number_of_users).encode())  # sending the pc num to client
                 client_socket.recv(100)
                 client_socket.send(b'found you, new')
-                utils.send_all(identifier, client_socket)  # sending all of the folder to client
+                utils.send_all(identifier, client_socket)  # sending all the folder to client
 
             else:  # if we encounter an existing client
                 client_socket.send(b'found you!')
